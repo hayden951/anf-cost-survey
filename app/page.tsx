@@ -1,13 +1,14 @@
 "use client";
 import { useState } from "react";
- 
+
 type CategoryKey = "cost" | "performance" | "availability" | "commitment" | "mobility";
- 
+type Screen = "intro" | "quiz" | "results";
+
 interface Answer { label: string; s: number; }
 interface Question { category: string; badge: string; text: string; answers: Answer[]; key: CategoryKey; }
 interface Threshold { lo: number; hi: number; label: string; emoji: string; color: string; bg: string; border: string; desc: string; remediate: string; }
 interface RiskStyle { label: string; color: string; bg: string; border: string; }
- 
+
 const CATEGORIES: { [K in CategoryKey]: string } = {
   cost:        "Cost & Utilization",
   performance: "Performance & Tiering",
@@ -15,42 +16,45 @@ const CATEGORIES: { [K in CategoryKey]: string } = {
   commitment:  "Commitment & Flexibility",
   mobility:    "Workload & Data Mobility",
 };
- 
+
 const questions: Question[] = [
   { category: "Cost & Utilization", badge: "PRIORITY", text: "Based on deployed capacity versus used capacity, what percentage of the Azure NetApp Files capacity are you actually using? (fleet wide)", answers: [{ label: "More than 80%", s: 1 }, { label: "60–80%", s: 2 }, { label: "40–60%", s: 3 }, { label: "Less than 40%", s: 4 }], key: "cost" },
   { category: "Cost & Utilization", badge: "PRIORITY", text: "Over the last 12 months, have you needed to deploy a new Azure NetApp Files cluster because another cluster was becoming full?", answers: [{ label: "Yes, several new deployments", s: 4 }, { label: "Yes, one new deployment", s: 3 }, { label: "No, our existing clusters are not full", s: 1 }, { label: "I don't know", s: 2 }], key: "cost" },
-  { category: "Performance & Tiering", badge: "HIGH RISK", text: "When you size your Azure NetApp Files clusters, have you experienced the challenge of provisioning more capacity than you need, just to hit a performance threshold? When you size your Azure NetApp Files clusters, have you experienced the challenge of provisioning more capacity than you need, just to hit a performance threshold? (i.e., ANF Standard has a limit of 16 MiB/TB provisioned, Premium is 64 MiB/TB provisioned, Ultra is 128 MiB/TB)", answers: [{ label: "Yes, we routinely provision more capacity to achieve the required performance", s: 4 }, { label: "Sometimes, we use different clusters for high-performance and low performance workloads", s: 3 }, { label: "No — we use the tier that matches our performance and capacity needs", s: 1 }, { label: "I don't know", s: 2 }], key: "performance" },
+  { category: "Performance & Tiering", badge: "HIGH RISK", text: "When you size your Azure NetApp Files clusters, have you experienced the challenge of provisioning more capacity than you need, just to hit a performance threshold? (i.e., ANF Standard has a limit of 16 MiB/TB provisioned, Premium is 64 MiB/TB provisioned, Ultra is 128 MiB/TB)", answers: [{ label: "Yes, we routinely provision more capacity to achieve the required performance", s: 4 }, { label: "Sometimes, we use different clusters for high-performance and low performance workloads", s: 3 }, { label: "No — we use the tier that matches our performance and capacity needs", s: 1 }, { label: "I don't know", s: 2 }], key: "performance" },
   { category: "Availability", badge: "HIGH RISK", text: "Have you experienced difficulty securing available capacity when deploying Azure NetApp Files?", answers: [{ label: "Yes, we regularly escalate to Microsoft for more capacity", s: 4 }, { label: "Sometimes, we are able to launch on-demand about 50% of the time", s: 3 }, { label: "No, we routinely deploy ANF on-demand without coordinating capacity", s: 1 }, { label: "I don't know or we haven't deployed something new recently", s: 2 }], key: "availability" },
   { category: "Commitment & Flexibility", badge: "QUICK WIN", text: "Do you use Azure NetApp Files reserved capacity commitments to control costs?", answers: [{ label: "Yes, we use 3 year commitments routinely", s: 1 }, { label: "Yes, we use 1 year commitments routinely", s: 2 }, { label: "Sometimes, we use reserved capacity commitments for specific clusters, but not all", s: 3 }, { label: "No, we only use fully flexible clusters", s: 4 }], key: "commitment" },
   { category: "Commitment & Flexibility", badge: "QUICK WIN", text: "If your capacity or performance requirements change, how easily can you reduce your ANF commitment or right-size without penalty?", answers: [{ label: "Easily, anytime", s: 1 }, { label: "With some notice or planning", s: 2 }, { label: "Difficult, largely locked in for the term", s: 3 }, { label: "Not without penalty or stranded commitment", s: 4 }], key: "commitment" },
   { category: "Workload & Data Mobility", badge: "HIGH RISK", text: "Do you deploy separate systems (workload-by-workload) or do you service multiple workloads from the same Azure NetApp Files instance?", answers: [{ label: "Fully unified deployment, one system covers everything", s: 1 }, { label: "We use one main system for general file, then deploy small instances for some workloads", s: 2 }, { label: "Each workload gets its own instance", s: 4 }, { label: "I don't know", s: 3 }], key: "mobility" },
   { category: "Workload & Data Mobility", badge: "HIGH RISK", text: "How easily can you move or share your Azure NetApp Files data across regions, clouds, or back on-prem without copying or migrating it?", answers: [{ label: "Easily, we use a global data fabric to provide this functionality", s: 1 }, { label: "With some effort, we use SnapMirror to connect clusters (requires copying)", s: 2 }, { label: "We copy full datasets across regions, clouds, or other clusters", s: 3 }, { label: "We only operate in one region today", s: 4 }], key: "mobility" },
 ];
- 
+
 const THRESHOLDS: Threshold[] = [
   { lo: 8,  hi: 15, label: "Low Exposure",      emoji: "🟢", color: "#14532d", bg: "#dcfce7", border: "#16a34a", desc: "Your ANF setup is well-optimized. Utilization is high, commitments are in place, and data mobility is strong.", remediate: "Monitor quarterly — no urgent action needed." },
   { lo: 16, hi: 22, label: "Moderate Exposure", emoji: "🟡", color: "#713f12", bg: "#fef9c3", border: "#ca8a04", desc: "Some inefficiencies in provisioning or commitment strategy. Begin evaluating tiering, reserved capacity, and workload consolidation.", remediate: "6–12 months — begin optimization planning." },
   { lo: 23, hi: 27, label: "High Exposure",     emoji: "🟠", color: "#7c2d12", bg: "#ffedd5", border: "#ea580c", desc: "Meaningful cost exposure from over-provisioning, capacity constraints, or lack of reserved commitments. Prioritize a cost optimization review.", remediate: "3–6 months — prioritize cost review this quarter." },
   { lo: 28, hi: 32, label: "Critical Exposure", emoji: "🔴", color: "#7f1d1d", bg: "#fee2e2", border: "#dc2626", desc: "Highly exposed to ANF cost inefficiency. Over-provisioned, under-committed, and limited data mobility. Act immediately to reduce waste and risk.", remediate: "Act now — immediate cost optimization required." },
 ];
- 
+
 const catKeys: CategoryKey[] = ["cost", "performance", "availability", "commitment", "mobility"];
- 
+
 function getOverallRisk(score: number): Threshold {
   return THRESHOLDS.find(t => score >= t.lo && score <= t.hi) || THRESHOLDS[THRESHOLDS.length - 1];
 }
- 
 function getCatRisk(score: number, max: number): RiskStyle {
   const pct = score / max;
   if (pct <= 0.33) return { label: "Low Risk",    color: "#14532d", bg: "#dcfce7", border: "#16a34a" };
   if (pct <= 0.66) return { label: "Medium Risk", color: "#713f12", bg: "#fef9c3", border: "#ca8a04" };
   return                  { label: "High Risk",   color: "#7f1d1d", bg: "#fee2e2", border: "#dc2626" };
 }
- 
 function getCatIndex(category: string): number {
   return catKeys.findIndex((k: CategoryKey) => CATEGORIES[k] === category);
 }
- 
+function getBadgeStyle(badge: string) {
+  if (badge === "PRIORITY") return { bg: "#fee2e2", color: "#991b1b" };
+  if (badge === "HIGH RISK") return { bg: "#ffedd5", color: "#9a3412" };
+  if (badge === "QUICK WIN") return { bg: "#dcfce7", color: "#166534" };
+  return { bg: "#f3f4f6", color: "#374151" };
+}
 function downloadPDF(): void {
   const root = document.getElementById('results-printable');
   const clone = root!.cloneNode(true) as HTMLElement;
@@ -62,19 +66,9 @@ function downloadPDF(): void {
   s.innerHTML = '@media print{@page{margin:0.6in;size:letter}body > *:not(#print-clone){display:none!important}#print-clone{display:block!important}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}*{overflow:visible!important;max-height:none!important;height:auto!important}button{display:none!important}}';
   document.head.appendChild(s);
   window.print();
-  setTimeout(() => {
-    const e = document.getElementById('pf'); if (e) e.remove();
-    const c = document.getElementById('print-clone'); if (c) c.remove();
-  }, 1500);
+  setTimeout(() => { const e = document.getElementById('pf'); if (e) e.remove(); const c = document.getElementById('print-clone'); if (c) c.remove(); }, 1500);
 }
- 
-function getBadgeStyle(badge: string) {
-  if (badge === "PRIORITY") return { bg: "#fee2e2", color: "#991b1b" };
-  if (badge === "HIGH RISK") return { bg: "#ffedd5", color: "#9a3412" };
-  if (badge === "QUICK WIN") return { bg: "#dcfce7", color: "#166534" };
-  return { bg: "#f3f4f6", color: "#374151" };
-}
- 
+
 function ScoringHeader() {
   return (
     <div style={{ background: "#fff", borderRadius: 12, padding: "20px 28px", marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", borderLeft: "4px solid #0078d4" }}>
@@ -93,40 +87,64 @@ function ScoringHeader() {
     </div>
   );
 }
- 
+
 export default function Page() {
+  const [screen, setScreen] = useState<Screen>("intro");
   const [currentQ, setCurrentQ] = useState<number>(0);
   const [answers, setAnswers] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
-  const [done, setDone] = useState<boolean>(false);
- 
+
   const q: Question = questions[currentQ];
   const isLast: boolean = currentQ === questions.length - 1;
   const progress: number = ((currentQ + 1) / questions.length) * 100;
   const catIdx: number = getCatIndex(q.category);
   const badgeStyle = getBadgeStyle(q.badge);
- 
+
   function handleNext(): void {
     if (selected === null) return;
     const newAnswers = [...answers, selected];
-    if (isLast) { setAnswers(newAnswers); setDone(true); }
+    if (isLast) { setAnswers(newAnswers); setScreen("results"); }
     else { setAnswers(newAnswers); setCurrentQ(currentQ + 1); setSelected(null); }
   }
- 
   function handleRestart(): void {
-    setCurrentQ(0); setAnswers([]); setSelected(null); setDone(false);
+    setScreen("intro"); setCurrentQ(0); setAnswers([]); setSelected(null);
   }
- 
-  if (done) {
+
+  // ── INTRO ────────────────────────────────────────────────────
+  if (screen === "intro") {
+    return (
+      <div style={{ minHeight: "100vh", background: "#f5f7fc", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: "'Inter', system-ui, sans-serif" }}>
+        <div style={{ maxWidth: 640, width: "100%" }}>
+          <div style={{ background: "radial-gradient(120% 140% at 80% -10%, #003a8c 0%, #001d4a 45%, #000d24 100%)", borderRadius: 20, padding: "48px 40px", boxShadow: "0 10px 40px rgba(0,120,212,0.4)", position: "relative", overflow: "hidden" }}>
+            <div style={{ position: "absolute", right: -60, top: -60, width: 260, height: 260, borderRadius: 40, background: "radial-gradient(circle, rgba(0,120,212,0.25), transparent 70%)", filter: "blur(6px)" }} />
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#60a5fa", margin: "0 0 14px" }}>Azure NetApp Files · 2-Minute Self-Assessment</p>
+            <h1 style={{ fontFamily: "system-ui, sans-serif", fontSize: "clamp(24px, 5vw, 36px)", fontWeight: 800, lineHeight: 1.1, color: "#fff", margin: "0 0 16px", letterSpacing: "-0.01em" }}>How much is your Azure NetApp Files setup really costing you?</h1>
+            <p style={{ fontSize: 16, color: "#bfdbfe", margin: "0 0 24px", lineHeight: 1.6, maxWidth: 520 }}>Provisioned-capacity billing, throughput tiers, and reserved commitments can quietly inflate ANF spend. Answer 8 quick questions to see how much you are paying, what optimizations are most important — and what to do about it.</p>
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, color: "#93c5fd", marginBottom: 30 }}>
+              <span><strong style={{ color: "#fff" }}>8</strong> questions</span>
+              <span><strong style={{ color: "#fff" }}>~2 minutes</strong></span>
+              <span><strong style={{ color: "#fff" }}>Instant</strong> exposure score</span>
+            </div>
+            <button onClick={() => setScreen("quiz")} style={{ background: "#0078d4", color: "#fff", border: "none", borderRadius: 10, padding: "15px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer", boxShadow: "0 6px 18px rgba(0,120,212,0.4)", letterSpacing: "0.01em" }}>
+              Start the assessment →
+            </button>
+            <p style={{ fontSize: 12, color: "#60a5fa", margin: "16px 0 0", fontStyle: "italic" }}>Your answers are used only to generate your assessment. A diagnostic, not a pitch.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── RESULTS ──────────────────────────────────────────────────
+  if (screen === "results") {
     const totals: { [K in CategoryKey]: number } = { cost: 0, performance: 0, availability: 0, commitment: 0, mobility: 0 };
     answers.forEach((ai: number, qi: number) => { totals[questions[qi].key] += questions[qi].answers[ai].s; });
     const totalScore: number = Object.values(totals).reduce((a, b) => a + b, 0);
     const overall: Threshold = getOverallRisk(totalScore);
- 
+
     return (
       <div style={{ minHeight: "100vh", background: "#f9fafb", padding: 24 }}>
         <div id="results-printable" style={{ maxWidth: 560, margin: "0 auto" }}>
-          <ScoringHeader />
           {totalScore > 20 && (
             <div style={{ background: "#0078d4", borderRadius: 12, padding: 24, marginBottom: 16 }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", margin: "0 0 6px" }}>💬 Let&apos;s talk about your ANF costs</p>
@@ -236,11 +254,11 @@ export default function Page() {
       </div>
     );
   }
- 
+
+  // ── QUIZ ─────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#f9fafb" }}>
       <div style={{ maxWidth: 560, width: "100%" }}>
-        <ScoringHeader />
         <div style={{ background: "#fff", borderRadius: 12, padding: 40, boxShadow: "0 2px 12px rgba(0,0,0,0.07)" }}>
           <p style={{ fontSize: 13, fontWeight: 700, color: "#9ca3af", margin: "0 0 4px" }}>Category {catIdx + 1} of {catKeys.length}</p>
           <p style={{ fontSize: 16, fontWeight: 700, color: "#111", margin: "0 0 4px" }}>{q.category}</p>
@@ -269,4 +287,3 @@ export default function Page() {
     </div>
   );
 }
- 
