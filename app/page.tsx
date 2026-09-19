@@ -78,11 +78,12 @@ function getBadgeStyle(badge: string) {
 function ScoringHeader() {
   return (
     <div style={{ background: "#fff", borderRadius: 12, padding: "20px 28px", marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", borderLeft: "4px solid #0078d4" }}>
-      <p style={{ fontSize: 13, fontWeight: 700, color: "#0078d4", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Azure NetApp Files</p>
-      <p style={{ fontSize: 18, fontWeight: 700, color: "#111", margin: "0 0 6px" }}>Cost Optimization & Utilization Assessment</p>
-      <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px", lineHeight: 1.6 }}>Provisioned-capacity billing, throughput tiers, and reserved commitments can quietly inflate ANF spend. Each question is scored to reveal your cost exposure.</p>
+      <p style={{ fontSize: 13, fontWeight: 700, color: "#0078d4", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Azure NetApp Files · 2-Minute Self-Assessment</p>
+      <p style={{ fontSize: 18, fontWeight: 700, color: "#111", margin: "0 0 6px" }}>How much is your Azure NetApp Files setup really costing you?</p>
+      <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 6px", lineHeight: 1.6 }}>Provisioned-capacity billing, throughput tiers, and reserved commitments can quietly inflate ANF spend. Answer 8 quick questions to see what optimizations are most important — and what to do about it.</p>
+      <p style={{ fontSize: 12, color: "#9ca3af", margin: "0 0 16px", fontStyle: "italic" }}>Your answers are used only to generate your assessment. A diagnostic, not a pitch.</p>
       <div style={{ display: "flex", gap: 20, paddingTop: 12, borderTop: "1px solid #f3f4f6" }}>
-        {[["5", "Categories"], ["8", "Questions"], ["32", "Max Score"]].map(([val, lbl]) => (
+        {[["5", "Categories"], ["8", "Questions"], ["32", "Max Score"], ["~2 min", "Time"]].map(([val, lbl]) => (
           <div key={lbl} style={{ textAlign: "center" }}>
             <div style={{ fontSize: 20, fontWeight: 700, color: "#111" }}>{val}</div>
             <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{lbl}</div>
